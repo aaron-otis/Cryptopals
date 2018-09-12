@@ -176,3 +176,23 @@ fn cbc_bitflipping_decryption_test() {
 
     assert_eq!(oracle.is_admin(&ct), false);
 }
+
+// Test that the CBC padding oracle works.
+#[test]
+fn cbc_padding_oracle_test() {
+    use my_crypto::oracle::CBCPaddingOracle;
+    use util::random_key;
+
+    let key = random_key();
+    let oracle = CBCPaddingOracle::new(&key);
+    let (iv, ct) = oracle.gen_ciphertext();
+
+    // Should pass validation.
+    assert_eq!(oracle.is_valid(&ct, &iv), true);
+
+    let mut ct_prime = ct.to_owned();
+    ct_prime[ct.len() - 1] = 100;
+
+    // Should fail validation.
+    assert_eq!(oracle.is_valid(&ct_prime, &iv), false);
+}

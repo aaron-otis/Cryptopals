@@ -1,6 +1,6 @@
 #[cfg(test)]
 
-// Basic set challenge 1. Convert a hex string to a base 64 string.
+// Basic set challenge 1: Convert a hex string to a base 64 string.
 #[test]
 fn hex_to_base64_test() {
     use super::{hex_decode, b64_encode};
@@ -18,7 +18,7 @@ fn hex_to_base64_test() {
     assert_eq!(b64_str, result);
 }
 
-// Basic set challenge 2. Xor of two equal length strings.
+// Basic set challenge 2: Xor of two equal length strings.
 #[test]
 fn fixed_xor_test() {
     use super::{hex_encode, hex_decode, xor};
@@ -41,7 +41,7 @@ fn fixed_xor_test() {
     assert_eq!(hex_encode(result), expected_result);
 }
 
-// Basic set challenge 5. Xor of strings with different lengths.
+// Basic set challenge 5: Xor of strings with different lengths.
 #[test]
 fn repeating_key_xor_test() {
     use xor::xor;
@@ -66,7 +66,7 @@ fn hamming_distance_test() {
     assert_eq!(hd, 37);
 }
 
-// Block crypto challenge 9.
+// Block crypto challenge 9: Implement PKCS#7 padding.
 #[test]
 fn pkcs7_padding_test() {
     use my_crypto::padding::pkcs7;
@@ -150,7 +150,7 @@ fn encrypt_profile_test() {
     assert_eq!("email=me@example.com&uid=10&role=user", decrypted);
 }
 
-// Block cipher set challenge 15. PKCS#7 padding validation.
+// Block cipher set challenge 15: PKCS#7 padding validation.
 #[test]
 fn pkcs7_validation_test() {
     use my_crypto::padding::pkcs7::is_valid;

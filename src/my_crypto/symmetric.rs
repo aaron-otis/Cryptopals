@@ -1,5 +1,8 @@
 use crypto;
 
+/*
+ * Block cipher implementations.
+ */
 pub enum BlockCiphers {AES}
 pub enum BlockCipherErrors {InvalidKey,
                             InvalidCipher,
@@ -111,9 +114,11 @@ impl<'a> BlockCipher<'a> {
     }
 }
 
+// Block cipher modes of operation.
 pub mod modes {
     use my_crypto::symmetric::BlockCipher;
 
+    // Supported modes of operation.
     pub enum Modes {ECB, CBC}
 
     pub fn ecb_encrypt(bc: &BlockCipher, msg: &[u8]) -> Vec<u8> {
@@ -181,6 +186,12 @@ pub mod modes {
 }
 
 pub mod analysis {
+
+    /* 
+     * Determines whether ECB mode was used to encrypt ct or not. Depends on
+     * the fact that ciphertext block encrypted under ECB mode will be
+     * identical if the plaintext blocks are identical.
+     */
     pub fn detect_ecb(ct: &[u8], blk_size: usize) -> bool {
         let mut i = 1;
 
@@ -195,7 +206,11 @@ pub mod analysis {
         false
     }
 
-    // TODO: Return a Vec containing positions of all detected ECB blocks.
+    /* 
+     * Returns the position of the first ciphertext block that has an identical
+     * ciphertext block or false if no identical blocks are detected.
+     * TODO: Return a Vec containing positions of all detected ECB blocks.
+     */
     pub fn detect_ecb_position (ct: &[u8],
                                 blk_size: usize) -> Result<usize, bool> {
         let mut i = 1;
@@ -211,19 +226,27 @@ pub mod analysis {
         Err(false)
     }
 
+    /* 
+     * Detects block size by encrypting inputs of increasing lengths until the
+     * length of the ciphertext increases.
+     */
     pub fn detect_block_size(encrypt: &Fn(&[u8]) -> Vec<u8>) -> usize {
         let mut input: Vec<u8> = Vec::new();
         let mut ct: Vec<u8>;
-        let mut old_size: usize;
         let mut blk_size: usize = 0;
 
         ct = encrypt(&input);
+
+        /* 
+         * Uses two iterations since data may be prepended/appended to input
+         * before encryption.
+         */
         for _i in 1 .. 3 {
             blk_size = 0;
-            old_size = ct.len();
+            let old_size = ct.len();
 
+            // Increase length of input until length of ciphertext changes.
             while ct.len() == old_size {
-                old_size = ct.len();
                 input.push(96);
                 ct = encrypt(&input);
                 blk_size += 1;
@@ -243,7 +266,7 @@ pub mod attacks {
                               detect_ecb,
                               detect_ecb_position};
 
-        // Detect block size (should be 16).
+        // Detect block size (should be 16 if using AES).
         let blk_size = detect_block_size(encrypt);
         println!("block size found: {}", blk_size);
 
@@ -254,8 +277,10 @@ pub mod attacks {
             false => panic!("{}", "ECB mode not detected!".red())
         }
 
-        // Determine the number of bytes to pad input in order to round
-        // the prepended string to a full block.
+        /* 
+         * Determine the number of bytes to pad input in order to round
+         * the prepended string to a full block.
+         */
         let mut prepend_pad_len: usize = 0;
         let mut msg: Vec<u8> = vec![0; blk_size * 2];
         let mut ct: Vec<u8> = encrypt(&msg);
@@ -290,12 +315,9 @@ pub mod attacks {
                         blk_size +
                         first_ecb_block_pos *
                         blk_size;
-            assert_eq!(index % blk_size, 0);
 
             ct = encrypt(&input);
             let discover = ct[index .. index + blk_size].to_vec();
-            assert_eq!(discover.len(), blk_size);
-
             let mut dict: HashMap<u8, Vec<u8>> = HashMap::new();
             input.append(&mut decrypted.to_owned());
 
@@ -307,6 +329,7 @@ pub mod attacks {
                 input.pop();
             }
 
+            // Look for equal ciphertext blocks.
             for (k, v) in dict {
                 if discover == v {
                     decrypted.push(k);
@@ -314,7 +337,7 @@ pub mod attacks {
                 }
             }
 
-            // Detect padding and stop if correct padding is found.
+            // Detect padding and stop if expected padding is found.
             if decrypted[decrypted.len() - 1] == 1 {
                 decrypted.pop();
                 break;

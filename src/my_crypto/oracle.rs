@@ -1,17 +1,28 @@
+/*
+ * Oracles used in various challenges.
+ */
+
 use super::symmetric::modes::Modes;
 use super::symmetric::{BlockCipher, BlockCiphers};
 
+
+/* 
+ * An ECB oracle that prepends a specified message and appends a specific
+ * message to user input before encrypting it under AES-ECB.
+ */
 pub struct ECBOracle<'a> {
     bc: BlockCipher<'a>,
     prepend: Vec<u8>
 }
 
 impl <'a>ECBOracle<'a> {
+    // Create an ECBOracle object.
     pub fn new(key: &'a [u8], prepend: bool) -> ECBOracle<'a> {
         use rand::{thread_rng, Rng};
         let mut begin: Vec<u8> = Vec::new();
 
         if prepend {
+            // Generate a random string of length 0 - 256, chosen randomly.
             let mut rng = thread_rng();
             let len: usize = rng.gen_range(0, 256);
             begin = vec![0; len];
@@ -27,11 +38,13 @@ impl <'a>ECBOracle<'a> {
         }
     }
 
+    // Encrypts user input, after prepending and appending to it, via AES-ECB.
     pub fn encrypt(&self, msg: &[u8]) -> Vec<u8> {
         use super::symmetric::modes::ecb_encrypt;
         use super::padding::pkcs7::pad;
         use super::super::b64_decode;
 
+        // Prepend and append messages.
         let mut begin: Vec<u8> = self.prepend.to_owned();
         let mut msg = msg.to_vec();
         let mut secret = b64_decode(
@@ -39,9 +52,10 @@ impl <'a>ECBOracle<'a> {
              aGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq\
              dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUg\
              YnkK").unwrap();
-
         msg.append(&mut secret);
         begin.append(&mut msg);
+
+        // Encrypt.
         ecb_encrypt(&self.bc, &pad(&begin, self.bc.block_size()))
     }
 }
@@ -53,6 +67,10 @@ pub struct CBCBitflipOracle<'a> {
     append: Vec<u8>
 }
 
+/*
+ * A CBC oracle the prepends and appends specific messages to user input before
+ * encrypting it under AES-CBC with an IV of all zeros.
+ */
 impl <'a>CBCBitflipOracle<'a> {
     // Creates a new CBCBitflipOracle object. Uses and IV of all zeros.
     pub fn new(key: &'a [u8]) -> CBCBitflipOracle<'a> {
@@ -125,6 +143,11 @@ impl <'a>CBCBitflipOracle<'a> {
     }
 }
 
+/*
+ * Generates ciphertext under AES-CBC or AES-ECB each 50% of the time. Appends
+ * and prepends different random 5-10 byte strings to user input before
+ * encrypting.
+ */
 pub fn random_encryption(msg: &[u8]) -> Vec<u8> {
     use rand::{random, thread_rng, Rng};
     use super::symmetric::modes::{cbc_encrypt, ecb_encrypt};
@@ -172,6 +195,7 @@ pub fn random_encryption(msg: &[u8]) -> Vec<u8> {
     }
 }
 
+// Detects whether ECB or CBC mode was used to encrypt ct.
 pub fn detection(ct: &[u8]) -> Modes {
     use super::symmetric::analysis::detect_ecb;
 

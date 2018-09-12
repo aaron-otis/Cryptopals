@@ -3,6 +3,7 @@ pub use std::io;
 pub use std::io::prelude::*;
 use super::Encoding;
 
+// Creates a random 16 byte key.
 pub fn random_key() -> Vec<u8> {
     use rand::{thread_rng, Rng};
 
@@ -13,6 +14,7 @@ pub fn random_key() -> Vec<u8> {
     key
 }
 
+// Reads a file line-by-line and decodes each line under the supplied encoding.
 pub fn read_and_decode_lines(filename: &'static str, encoding: Encoding) -> Vec<u8> {
     use super::{b64_decode, hex_decode};
 

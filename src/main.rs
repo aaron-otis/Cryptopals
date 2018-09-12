@@ -35,7 +35,10 @@ fn main() {
 
 // Basic challenges.
 fn set1() {
-    // Basic challenge 3.
+    /*
+     * Basic challenge 3: Decrypt a single byte XOR. Uses frequency analysis
+     * to determine the single byte key in order to decrypt the message.
+     */
     use frequency_analysis::find_single_byte_key;
     use xor::xor;
     let basic3_str = match hex_decode("1b37373331363f78151b7f2b783431333d783978\
@@ -52,7 +55,10 @@ fn set1() {
     print!("{}", "Basic challenge 3 decrypted: ".green());
     println!("{}", basic3_res);
 
-    // Basic challenge 4.
+    /* 
+     * Basic challenge 4: Detect single byte XOR. Decrypts each line and checks
+     * if the decryption forms a valid ASCII string.
+     */
     let f = File::open("src/Basic_challege_4.txt").expect("file not found");
     let mut basic4_res: Vec<(usize, String)> = Vec::new();
 
@@ -78,13 +84,19 @@ fn set1() {
         println!("line {}: {}", lineno, line);
     }
 
-    // Basic challenge 6.
+    /* 
+     * Basic challenge 6: Break repeating-key XOR.
+     */
     let text = read_and_decode_lines("src/Basic_challege_6.txt", Encoding::BASE64);
     let basic6_res = xor::crack_repeating_key_xor(text);
     println!("\n{}", "Basic challenge 6 decrypted:".green());
     println!("{}", basic6_res);
 
-    // Basic challenge 7.
+    /* 
+     * Basic challenge 7: AES in ECB mode. The supplied file has been encrypted
+     * via AES-ECB with the supplied key. AES-ECB implemented in order to
+     * decrypt the message.
+     */
     use my_crypto::symmetric::modes::ecb_decrypt;
     use my_crypto::symmetric::{BlockCipher, BlockCiphers};
 
@@ -98,7 +110,11 @@ fn set1() {
     println!("\n{}", "Basic challenge 7 decrypted:".green());
     println!("{}", String::from_utf8(basic7_result[.. text.len() - 4].to_vec()).unwrap());
 
-    // Basic challenge 8.
+    /* 
+     * Basic challenge 8: Detect AES in ECB mode. One of the lines in the
+     * supplied file is encrypted via AES-ECB. This is detected by looking
+     * for identical ciphertext blocks.
+     */
     println!("{}", "Basic challenge 8:".green());
     use my_crypto::symmetric::analysis::detect_ecb;
     let f = File::open("src/Basic_challege_8.txt").expect("file not found");
@@ -111,7 +127,11 @@ fn set1() {
 
 // Block crypto set.
 fn set2() {
-    // Block crypto challenge 10.
+    /* 
+     * Block crypto challenge 10: Implement CBC mode. The supplied file is
+     * encrypted with AES-CBC under the supplied key and an IV of all zeros.
+     * CBC mode was implemented to decrypt it.
+     */
     use my_crypto::symmetric::modes::cbc_decrypt;
     use my_crypto::symmetric::{BlockCipher, BlockCiphers};
     use my_crypto::padding::pkcs7::unpad;
@@ -132,7 +152,9 @@ fn set2() {
     println!("\n{}\n{}", "Block Cipher challenge 10".green(), block_crypto10_result);
     drop(block_crypto10_result);
 
-    // Block crypto challenge 11.
+    /* 
+     * Block crypto challenge 11: ECB/CBC detection oracle.
+     */
     use my_crypto::oracle::{random_encryption, detection};
     use my_crypto::symmetric::modes::Modes;
     let vec_size: usize = 64;
@@ -147,7 +169,10 @@ fn set2() {
         }
     }
 
-    // Block crypto challenge 12.
+    /* 
+     * Block crypto challenge 12: Byte-at-a-time ECB decryption (simple).
+     * Decrypts a message appended to user input encrypted under ECB mode.
+     */
     use my_crypto::oracle::ECBOracle;
     use my_crypto::symmetric::attacks::ecb_oracle_decryption;
     let key = random_key();
@@ -158,7 +183,11 @@ fn set2() {
     drop(oracle);
     drop(decrypted);
 
-    // Block crypto challenge 13.
+    /* 
+     * Block crypto challenge 13: ECB cut-and-paste. Modifies ECB ciphertexts
+     * such that it decrypts with a specific message. Relies on the fact that
+     * ECB ciphertext modification do not propagate errors.
+     */
     use url_parsing::{encrypt_profile, decrypt_profile, parse_url};
     let key = random_key();
     let bc = match BlockCipher::new(BlockCiphers::AES, &key) {
@@ -173,14 +202,26 @@ fn set2() {
     println!("{}", "Block crypto challenge 13".green());
     println!("role: {}", parsed["role"]);
 
-    // Block crypto challenge 14.
+    /* 
+     * Block crypto challenge 14: Byte-at-a-time ECB decryption (harder).
+     * Decrypts a message appended to user input when a random length string
+     * is prepended to the user's input and encrypted under ECB mode.
+     */
     let key = random_key();
     let oracle = ECBOracle::new(&key, true);
     println!("\n{}", "Block crypto challenge 14".green());
     println!("{}\n{}", "decrypted:".blue(),
                        ecb_oracle_decryption(&|msg| oracle.encrypt(msg)));
 
-    // Block crypto challenge 16.
+    /* 
+     * Block crypto challenge 16: CBC bitflipping attacks. Demonstrates that
+     * CBC ciphertext is malleable which can be used to modify decrypted
+     * blocks. Relies on the fact that the previous ciphertext block is XORed
+     * with the current plaintext block before encrypting it. By XORing the
+     * previous ciphertext block with the current plaintext block (which is
+     * controlled by the user) and with the desired replacement message, one
+     * can replace the original plaintext block with a new one.
+     */
     println!("\n{}", "Block crypto challenge 16".green());
     use my_crypto::oracle::CBCBitflipOracle;
     use xor::xor;
@@ -191,20 +232,24 @@ fn set2() {
     let input = vec!['a' as u8; 32];
     let ct = oracle.encrypt(&input);
 
-    // Bit flipping attack on CBC ciphertext.
+    // Bit flipping attack on CBC ciphertext. XOR previous ciphertext block
+    // with the current plaintext block and the desired message.
     let mut c_prime = xor(&xor(b"aaaaaaaaaaaaaaaa", b";admin=true;aaaa"),
                           &ct[32 .. 48]);
+
+    // Cute and paste the modified ciphertext block.
     let mut first = ct[.. 32].to_vec();
     let mut last = ct[48 ..].to_vec();
     c_prime.append(&mut last);
     first.append(&mut c_prime);
-    assert_eq!(first.len(), ct.len());
 
+    // Decrypt the new message ;^)
     match oracle.is_admin(&first) {
         true => println!("Achieved admin!"),
         false => println!("Failed to achieve admin")
     };
 }
 
+// Block and stream crypto.
 fn set3() {
 }

@@ -1,8 +1,14 @@
+/*
+ * Implements padding schemes.
+ */
+
 pub enum PaddingError {InvalidPadding}
 
+// PKCS#7 implementation.
 pub mod pkcs7 {
     use super::PaddingError;
 
+    // Adds PKCS#7 padding to the input returning a vector of bytes.
     pub fn pad(text: &[u8], blk_size: usize) -> Vec<u8> {
         let pad_len = blk_size - text.len() % blk_size;
         let mut ptr: Vec<u8> = vec![0; text.len()];
@@ -17,6 +23,10 @@ pub mod pkcs7 {
         ptr
     }
 
+    /* 
+     * Removes PKCS#7 padding, returning a vector of bytes if the padding is
+     * valid or an error is not.
+     */
     pub fn unpad(text: &[u8]) -> Result<Vec<u8>, PaddingError> {
         match is_valid(text) {
             true => {
@@ -27,6 +37,7 @@ pub mod pkcs7 {
         }
     }
 
+    // Determines whether the input has valid PKCS#7 padding or not.
     pub fn is_valid(text: &[u8]) -> bool {
         let size = text[text.len() - 1];
         let padding = text.to_vec()[text.len() - size as usize ..].to_vec();

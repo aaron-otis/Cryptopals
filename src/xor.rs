@@ -1,5 +1,9 @@
 pub enum Error { UnequalLengths }
 
+/* 
+ * XORs a key with a message. The key may be smaller than the message. Returns
+ * a vector of bytes containing the XOR ciphertext.
+ */
 pub fn xor(key: &[u8], msg: &[u8]) -> Vec<u8> {
     let mut result = Vec::new();
     let mut i = 0;
@@ -16,6 +20,10 @@ pub fn xor(key: &[u8], msg: &[u8]) -> Vec<u8> {
     result
 }
 
+/* 
+ * XORs two equal length strings. Returns a vector of bytes containing the 
+ * ciphertext if the strings are of equal length or an Error otherwise.
+ */
 pub fn _fixed_xor(key: Vec<u8>, msg: Vec<u8>) -> Result<Vec<u8>, Error> {
     if key.len() == msg.len() {
         let mut result: Vec<u8> = Vec::new();
@@ -30,6 +38,10 @@ pub fn _fixed_xor(key: Vec<u8>, msg: Vec<u8>) -> Result<Vec<u8>, Error> {
     }
 }
 
+/* 
+ * Decrypts a ciphertext encrypted under a repeating-key XOR by using frequency
+ * analysis to determine the key. Returns a String of the decrypted plaintext.
+ */
 pub fn crack_repeating_key_xor(text: Vec<u8>) -> String {
     use frequency_analysis::find_multi_byte_key;
 
@@ -40,6 +52,10 @@ pub fn crack_repeating_key_xor(text: Vec<u8>) -> String {
     String::from_utf8(decrypted).expect("Invalid UTF-8 sequence")
 }
 
+/*
+ * Determines the length of an XOR key by finding the minimum normalized
+ * hamming distance between blocks of ciphertext.
+ */
 pub fn find_xor_key_len(text: &Vec<u8>) -> usize {
     use hamming_distance;
 

@@ -1,6 +1,6 @@
 ## Cryptopals Challenges
 
-A repository of my attempt to learn cryptology and rust at the same time.
+A repository of my attempt to learn cryptology and rust at the same time. Some of the challenges are implemented as tests where it seems appropriate.
 
 ### Completed challenges
 

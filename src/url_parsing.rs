@@ -46,7 +46,7 @@ pub fn decrypt_profile(ct: &[u8], bc: &BlockCipher) -> String {
     use my_crypto::symmetric::modes::ecb_decrypt;
     use my_crypto::padding::pkcs7::unpad;
 
-    let decrypted = match unpad(&ecb_decrypt(bc, &ct)){
+    let decrypted = match unpad(&ecb_decrypt(bc, &ct), bc.block_size()){
         Ok(d) => d,
         Err(e) => panic!(e)
     };

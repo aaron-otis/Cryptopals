@@ -126,7 +126,8 @@ impl <'a>CBCBitflipOracle<'a> {
         use super::padding::pkcs7::unpad;
 
         let substr = b";admin=true;".to_vec();
-        let decrypted = match unpad(&cbc_decrypt(&self.bc, ct, &self.iv)) {
+        let decrypted = match unpad(&cbc_decrypt(&self.bc, ct, &self.iv),
+                                    self.bc.block_size()) {
             Ok(msg) => msg,
             Err(_e) => panic!("Invalid padding")
         };
@@ -140,6 +141,73 @@ impl <'a>CBCBitflipOracle<'a> {
         }
 
         false
+    }
+}
+
+pub struct CBCPaddingOracle<'a> {
+    bc: BlockCipher<'a>,
+    strings: Vec<&'a [u8]>
+}
+
+impl <'a>CBCPaddingOracle<'a> {
+    pub fn new(key: &'a [u8]) -> CBCPaddingOracle<'a> {
+        let strings: Vec<&[u8]> = vec![b"MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIG\
+                                        p1bXBpbmc=",
+                                       b"MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW\
+                                        4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=",
+                                       b"MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0by
+                                        B0aGUgcG9pbnQsIG5vIGZha2luZw==",
+                                       b"MDAwMDAzQ29va2luZyBNQydzIGxpa2UgYSBwb3\
+                                        VuZCBvZiBiYWNvbg==",
+                                       b"MDAwMDA0QnVybmluZyAnZW0sIGlmIHlvdSBhaW\
+                                        4ndCBxdWljayBhbmQgbmltYmxl",
+                                       b"MDAwMDA1SSBnbyBjcmF6eSB3aGVuIEkgaGVhci\
+                                        BhIGN5bWJhbA==",
+                                       b"MDAwMDA2QW5kIGEgaGlnaCBoYXQgd2l0aCBhIH\
+                                        NvdXBlZCB1cCB0ZW1wbw==",
+                                       b"MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW\
+                                        1lIHRvIGdvIHNvbG8=",
+                                       b"MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbn\
+                                        Qgb2g=",
+                                       b"MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzby\
+                                        BteSBoYWlyIGNhbiBibG93"];
+
+        CBCPaddingOracle {
+            bc: match BlockCipher::new(BlockCiphers::AES, key) {
+                Ok (bc) => bc,
+                Err (_e) => panic!("block cipher initialization failed!")
+            },
+            strings: strings
+        }
+    }
+
+    pub fn gen_ciphertext(&self) -> (Vec<u8>, Vec<u8>) {
+        use rand::{thread_rng, Rng};
+        use super::symmetric::modes::cbc_encrypt;
+        use super:: padding::pkcs7::pad;
+
+        // Pick a random string.
+        let mut rng = thread_rng();
+        let index = rng.gen_range(0, self.strings.len() - 1);
+        let string = self.strings[index].to_vec();
+
+        // Generate a random IV.
+        let mut iv = vec![0; self.bc.block_size()];
+        rng.fill(iv.as_mut_slice());
+
+        // Encrypt via CBC.
+        let ct = cbc_encrypt(&self.bc, &pad(&string, self.bc.block_size()), &iv);
+
+        (iv, ct)
+    }
+
+    pub fn is_valid(&self, ct: &[u8], iv: &[u8]) -> bool {
+        use super::symmetric::modes::cbc_decrypt;
+        use super::padding::pkcs7::is_valid;
+
+        let decrypted = cbc_decrypt(&self.bc, ct, iv);
+
+        is_valid(&decrypted, self.bc.block_size())
     }
 }
 

@@ -143,7 +143,7 @@ fn set2() {
         Err(_e) => panic!("block cipher initialization failed")
     };
     let iv = vec![0; bc.block_size()];
-    let pt = match unpad(&cbc_decrypt(&bc, &text, &iv)) {
+    let pt = match unpad(&cbc_decrypt(&bc, &text, &iv), bc.block_size()) {
         Ok(text) => text,
         Err(_e) => panic!("invalid padding")
     };
@@ -237,7 +237,7 @@ fn set2() {
     let mut c_prime = xor(&xor(b"aaaaaaaaaaaaaaaa", b";admin=true;aaaa"),
                           &ct[32 .. 48]);
 
-    // Cute and paste the modified ciphertext block.
+    // Cut and paste the modified ciphertext block.
     let mut first = ct[.. 32].to_vec();
     let mut last = ct[48 ..].to_vec();
     c_prime.append(&mut last);
@@ -252,4 +252,7 @@ fn set2() {
 
 // Block and stream crypto.
 fn set3() {
+    /*
+     * Block and stream crypto challenge 17: The CBC padding oracle. 
+     */
 }

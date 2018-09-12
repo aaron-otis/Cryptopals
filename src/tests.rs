@@ -160,10 +160,10 @@ fn pkcs7_validation_test() {
     let invalid2 = b"ICE ICE BABY\x01\x02\x03\x04";
     let invalid3 = b"ICE ICE BABY\x01\x02\x03\x100";
 
-    assert_eq!(is_valid(valid), true);
-    assert_eq!(is_valid(invalid1), false);
-    assert_eq!(is_valid(invalid2), false);
-    assert_eq!(is_valid(invalid3), false);
+    assert_eq!(is_valid(valid, 16), true);
+    assert_eq!(is_valid(invalid1, 16), false);
+    assert_eq!(is_valid(invalid2, 16), false);
+    assert_eq!(is_valid(invalid3, 16), false);
 }
 
 // Test CBC bit flipping decryption.

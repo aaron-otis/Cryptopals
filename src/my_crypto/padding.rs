@@ -27,8 +27,8 @@ pub mod pkcs7 {
      * Removes PKCS#7 padding, returning a vector of bytes if the padding is
      * valid or an error is not.
      */
-    pub fn unpad(text: &[u8]) -> Result<Vec<u8>, PaddingError> {
-        match is_valid(text) {
+    pub fn unpad(text: &[u8], blk_size: usize) -> Result<Vec<u8>, PaddingError> {
+        match is_valid(text, blk_size) {
             true => {
                 let pad_len = text[text.len() - 1];
                 Ok(text[.. text.len() - pad_len as usize].to_vec())
@@ -38,10 +38,14 @@ pub mod pkcs7 {
     }
 
     // Determines whether the input has valid PKCS#7 padding or not.
-    pub fn is_valid(text: &[u8]) -> bool {
+    pub fn is_valid(text: &[u8], blk_size: usize) -> bool {
         let size = text[text.len() - 1];
-        let padding = text.to_vec()[text.len() - size as usize ..].to_vec();
 
+        if size as usize > blk_size {
+            return false;
+        }
+
+        let padding = text.to_vec()[text.len() - size as usize ..].to_vec();
         if padding.len() != size as usize {
             return false;
         }

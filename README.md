@@ -4,7 +4,7 @@ A repository of my attempt to learn cryptology and rust at the same time.
 
 ### Completed challenges
 
-1. 1 - 8
-1. 9 - 16
-1. Currently completing.
+Set 1: 1 - 8
+Set 2: 9 - 16
+Set 3: Currently completing.
 
